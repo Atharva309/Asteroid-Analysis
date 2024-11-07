@@ -1,0 +1,235 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Step 1: Create Table -->
+    <changeSet author="sachin (generated)" id="1729788711461-1">
+        <createTable tableName="asteroid_info">
+            <column name="name" type="TEXT"/>
+            <column name="a" type="FLOAT8"/>
+            <column name="e" type="FLOAT8"/>
+            <column name="i" type="FLOAT8"/>
+            <column name="om" type="FLOAT8"/>
+            <column name="w" type="FLOAT8"/>
+            <column name="q" type="FLOAT8"/>
+            <column name="ad" type="FLOAT8"/>
+            <column name="per_y" type="FLOAT8"/>
+            <column name="data_arc" type="INTEGER"/>
+            <column name="condition_code" type="TEXT"/>
+            <column name="n_obs_used" type="INTEGER"/>
+            <column name="h" type="FLOAT8"/>
+            <column name="neo" type="BOOLEAN"/>
+            <column name="pha" type="BOOLEAN"/>
+            <column name="diameter" type="TEXT"/>
+            <column name="extent" type="TEXT"/>
+            <column name="albedo" type="FLOAT8"/>
+            <column name="rot_per" type="FLOAT8"/>
+            <column name="gm" type="FLOAT8"/>
+            <column name="bv" type="FLOAT8"/>
+            <column name="ub" type="FLOAT8"/>
+            <column name="ir" type="FLOAT8"/>
+            <column name="spec_B" type="TEXT"/>
+            <column name="spec_T" type="TEXT"/>
+            <column name="g" type="FLOAT8"/>
+            <column name="moid" type="FLOAT8"/>
+            <column name="class" type="TEXT"/>
+            <column name="n" type="FLOAT8"/>
+            <column name="per" type="FLOAT8"/>
+            <column name="ma" type="FLOAT8"/>
+            <column name="moid_bin" type="TEXT"/>
+            <column name="a_bin" type="TEXT"/>
+            <column name="e_bin" type="TEXT"/>
+            <column name="i_bin" type="TEXT"/>
+            <column name="h_bin" type="TEXT"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Step 2: Load Data from CSV -->
+    <changeSet author="sachin (generated)" id="1729788711461-2">
+        <loadData
+            tableName="asteroid_info"
+            file="data/Asteroid_Updated.csv"
+            separator=","
+            encoding="UTF-8">
+            <column name="name" type="TEXT"/>
+            <column name="a" type="FLOAT8"/>
+            <column name="e" type="FLOAT8"/>
+            <column name="i" type="FLOAT8"/>
+            <column name="om" type="FLOAT8"/>
+            <column name="w" type="FLOAT8"/>
+            <column name="q" type="FLOAT8"/>
+            <column name="ad" type="FLOAT8"/>
+            <column name="per_y" type="FLOAT8"/>
+            <column name="data_arc" type="INTEGER"/>
+            <column name="condition_code" type="TEXT"/> <!-- Load as TEXT for cleaning -->
+            <column name="n_obs_used" type="INTEGER"/>
+            <column name="h" type="FLOAT8"/>
+            <column name="neo" type="BOOLEAN"/>
+            <column name="pha" type="BOOLEAN"/>
+            <column name="diameter" type="TEXT"/> <!-- Load as TEXT for cleaning -->
+            <column name="extent" type="TEXT"/>
+            <column name="albedo" type="FLOAT8"/>
+            <column name="rot_per" type="FLOAT8"/>
+            <column name="gm" type="FLOAT8"/>
+            <column name="bv" type="FLOAT8"/>
+            <column name="ub" type="FLOAT8"/>
+            <column name="ir" type="FLOAT8"/>
+            <column name="spec_B" type="TEXT"/>
+            <column name="spec_T" type="TEXT"/>
+            <column name="g" type="FLOAT8"/>
+            <column name="moid" type="FLOAT8"/>
+            <column name="class" type="TEXT"/>
+            <column name="n" type="FLOAT8"/>
+            <column name="per" type="FLOAT8"/>
+            <column name="ma" type="FLOAT8"/>
+        </loadData>
+    </changeSet>
+
+    <!-- Step 3: Clean condition_code -->
+    <changeSet author="sachin" id="clean-condition-code">
+        <update tableName="asteroid_info">
+            <column name="condition_code" value="0"/>
+            <where>condition_code !~ '^[0-9]+$'</where>
+        </update>
+        <sql>ALTER TABLE asteroid_info ALTER COLUMN condition_code TYPE integer USING condition_code::integer;</sql>
+    </changeSet>
+
+    <!-- Step 4: Clean diameter -->
+    <changeSet author="sachin" id="clean-diameter">
+        <update tableName="asteroid_info">
+            <column name="diameter" value="REGEXP_REPLACE(diameter, '[^0-9.]', '', 'g')"/>
+            <where>diameter IS NOT NULL</where>
+        </update>
+        <sql>ALTER TABLE asteroid_info ALTER COLUMN diameter TYPE float USING diameter::float;</sql>
+    </changeSet>
+
+    <!-- Step 5: Create binned columns -->
+    <changeSet author="sachin" id="add-binned-columns">
+        <sql>ALTER TABLE asteroid_info ADD COLUMN moid_bin TEXT;</sql>
+        <sql>ALTER TABLE asteroid_info ADD COLUMN a_bin TEXT;</sql>
+        <sql>ALTER TABLE asteroid_info ADD COLUMN e_bin TEXT;</sql>
+        <sql>ALTER TABLE asteroid_info ADD COLUMN i_bin TEXT;</sql>
+        <sql>ALTER TABLE asteroid_info ADD COLUMN H_bin TEXT;</sql>
+    </changeSet>
+
+    <!-- Step 6: Populate binned columns for Moid -->
+    <changeSet author="sachin" id="populate-moid-bin">
+        <update tableName="asteroid_info">
+        <column name="moid_bin">
+            <![CDATA[
+            CASE
+                WHEN moid IS NULL THEN '-1'
+                WHEN moid >= 0 AND moid < 0.5 THEN '1'
+                WHEN moid >= 0.5 AND moid < 1 THEN '2'
+                WHEN moid >= 1 AND moid < 1.5 THEN '3'
+                WHEN moid >= 1.5 AND moid < 2 THEN '4'
+                WHEN moid >= 2 AND moid < 2.5 THEN '5'
+                WHEN moid >= 2.5 AND moid < 3 THEN '6'
+                ELSE '7'
+            END
+            ]]>
+        </column>
+        </update>
+    </changeSet>
+
+    <!-- Step 7: Populate binned columns for a -->
+    <changeSet author="sachin" id="populate-a-bin">
+        <sql>
+            <![CDATA[
+            UPDATE asteroid_info
+            SET a_bin = CASE
+                WHEN a >= 0 AND a < 0.5 THEN '1'
+                WHEN a >= 0.5 AND a < 1 THEN '2'
+                WHEN a >= 1 AND a < 1.5 THEN '3'
+                WHEN a >= 1.5 AND a < 2 THEN '4'
+                WHEN a >= 2 AND a < 2.5 THEN '5'
+                WHEN a >= 2.5 AND a < 3 THEN '6'
+                WHEN a >= 3 AND a < 3.5 THEN '7'
+                WHEN a >= 3.5 AND a < 4 THEN '8'
+                WHEN a >= 4 AND a < 4.5 THEN '9'
+                WHEN a >= 4.5 AND a < 5 THEN '10'
+                ELSE '11'
+            END;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <!-- Step 8: Populate binned columns for e -->
+    <changeSet author="sachin" id="populate-e-bin">
+        <sql>
+            <![CDATA[
+            UPDATE asteroid_info
+            SET e_bin = CASE
+                WHEN e >= 0 AND e < 0.05 THEN '1'
+                WHEN e >= 0.05 AND e < 0.1 THEN '2'
+                WHEN e >= 0.1 AND e < 0.15 THEN '3'
+                WHEN e >= 0.15 AND e < 0.2 THEN '4'
+                WHEN e >= 0.2 AND e < 0.25 THEN '5'
+                WHEN e >= 0.25 AND e < 0.3 THEN '6'
+                WHEN e >= 0.3 AND e < 0.35 THEN '7'
+                WHEN e >= 0.35 AND e < 0.4 THEN '8'
+                WHEN e >= 0.4 AND e < 0.45 THEN '9'
+                WHEN e >= 0.45 AND e < 0.5 THEN '10'
+                WHEN e >= 0.5 AND e < 0.55 THEN '11'
+                WHEN e >= 0.55 AND e < 0.6 THEN '12'
+                WHEN e >= 0.6 AND e < 0.65 THEN '13'
+                WHEN e >= 0.65 AND e < 0.7 THEN '14'
+                WHEN e >= 0.7 AND e < 0.75 THEN '15'
+                WHEN e >= 0.75 AND e < 0.8 THEN '16'
+                WHEN e >= 0.8 AND e < 0.85 THEN '17'
+                WHEN e >= 0.85 AND e < 0.9 THEN '18'
+                WHEN e >= 0.9 AND e < 0.95 THEN '19'
+                WHEN e >= 0.95 AND e <= 1 THEN '20'
+                ELSE '21'
+            END;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <!-- Step 9: Populate binned columns for i -->
+    <changeSet author="sachin" id="populate-i-bin">
+        <sql>
+            <![CDATA[
+            UPDATE asteroid_info
+            SET i_bin = CASE
+                WHEN i >= 0 AND i < 10 THEN '1'
+                WHEN i >= 10 AND i < 20 THEN '2'
+                WHEN i >= 20 AND i < 30 THEN '3'
+                WHEN i >= 30 AND i < 40 THEN '4'
+                WHEN i >= 40 AND i < 50 THEN '5'
+                WHEN i >= 50 AND i < 60 THEN '6'
+                WHEN i >= 60 AND i < 70 THEN '7'
+                WHEN i >= 70 AND i < 80 THEN '8'
+                WHEN i >= 80 AND i < 90 THEN '9'
+                WHEN i >= 90 AND i <= 100 THEN '10'
+                ELSE '11'
+            END;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <!-- Step 10: Populate binned columns for H -->
+    <changeSet author="sachin" id="populate-h-bin">
+        <sql>
+            <![CDATA[
+            UPDATE asteroid_info
+            SET H_bin = CASE
+                WHEN H >= 0 AND H < 3 THEN '1'
+                WHEN H >= 3 AND H < 6 THEN '2'
+                WHEN H >= 6 AND H < 9 THEN '3'
+                WHEN H >= 9 AND H < 12 THEN '4'
+                WHEN H >= 12 AND H < 15 THEN '5'
+                WHEN H >= 15 AND H < 18 THEN '6'
+                WHEN H >= 18 AND H < 21 THEN '7'
+                WHEN H >= 21 AND H < 24 THEN '8'
+                WHEN H >= 24 AND H < 27 THEN '9'
+                WHEN H >= 27 AND H < 30 THEN '10'
+                ELSE '11'
+            END;
+            ]]>
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
+
