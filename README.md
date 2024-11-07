@@ -2,7 +2,7 @@
 
 This project classifies Near-Earth Objects (NEO) and Potentially Hazardous Asteroids (PHA) using a Naive Bayes classifier on a PostgreSQL database. Data cleaning and feature engineering are done in PostgreSQL, with Liquibase for database versioning, and the classifier is implemented manually in R.
 
-dataset: (kaggle)[https://www.kaggle.com/datasets/basu369victor/prediction-of-asteroid-diameter]
+dataset: [kaggle](https://www.kaggle.com/datasets/basu369victor/prediction-of-asteroid-diameter)
 
 ## Project Overview
 
