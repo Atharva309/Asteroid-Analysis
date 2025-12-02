@@ -1,3 +1,5 @@
+#1
+
 def calculate_total(prices):
     total = 0
     for p in prices
